@@ -68,6 +68,8 @@ export default function Wheel() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState('')
   const [showResult, setShowResult] = useState(false)
+  const [resultImageSrc, setResultImageSrc] = useState('')
+  const [resultImageError, setResultImageError] = useState(false)
   
   const currentRotationRef = useRef(0)
   const spinSoundOscillatorRef = useRef(null)
@@ -274,8 +276,31 @@ export default function Wheel() {
     osc.stop(audioContextRef.current.currentTime + 0.4)
   }
 
+  const slugifyMood = (mood) => {
+    if (!mood) return ''
+    return mood
+      .toLowerCase()
+      .replace(/ı/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ş/g, 's')
+      .replace(/ç/g, 'c')
+      .replace(/ö/g, 'o')
+      .replace(/ü/g, 'u')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '')
+  }
+
+  const getMoodImageSrc = (mood) => {
+    const slug = slugifyMood(mood)
+    if (!slug) return ''
+    return `/moods/${slug}.png`
+  }
+
   const updateResult = (text) => {
     setResult(text)
+    setResultImageSrc(getMoodImageSrc(text))
+    setResultImageError(false)
     setShowResult(true)
     
     setTimeout(() => {
@@ -429,8 +454,21 @@ export default function Wheel() {
         className={`result-popup ${showResult ? 'is-visible' : ''}`}
         aria-live="polite"
       >
-        <div ref={resultValueRef} className="result-popup__value">
-          {result}
+        <div className="result-popup__content">
+          {resultImageSrc && !resultImageError && (
+            <Image
+              src={resultImageSrc}
+              alt={`${result} görseli`}
+              width={260}
+              height={260}
+              unoptimized
+              className="result-popup__image"
+              onError={() => setResultImageError(true)}
+            />
+          )}
+          <div ref={resultValueRef} className="result-popup__value">
+            {result}
+          </div>
         </div>
       </div>
     </div>
