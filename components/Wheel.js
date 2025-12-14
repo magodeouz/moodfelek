@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
 const MOODS = [
-  "Ruhsuz",
+  "Rüküş",
   "Stresli",
   "Üşümüş",
   "Agresif",
@@ -15,13 +15,13 @@ const MOODS = [
   "İncinmiş",
   "Mutlu",
   "Şanslı",
-  "Şaşkın",
   "Şapşik",
   "Ağlak",
   "Çalışkan",
   "Deli gibi",
-  "Fark etmez",
-  "Havalı prestij",
+  "Farketmez",
+  "Hayalperest",
+  "İyi",
   "Özgür",
   "Sexy",
   "Şirin",
@@ -32,8 +32,8 @@ const MOODS = [
   "Hangover",
   "Heyecanlı",
   "Kararsız",
-  "Deli gibi",
-  "Sıkılmış",
+  "Pamuk gibi",
+  "Sıcaklamış",
   "Umutlu",
   "Yıkık",
   "Bir şey eksik",
@@ -59,11 +59,16 @@ const ARTWORK_OFFSET = 4
 const SPIN_RANGE = { min: 4, max: 7 }
 const EASING = "cubic-bezier(0.12, 0.2, 0.03, 1)"
 
+const MOOD_SLUG_MAP = {
+  "Rüküş": "rukus",
+  "Hayalperest": "hayalperest",
+}
+
 export default function Wheel() {
   const wheelRef = useRef(null)
   const wheelShellRef = useRef(null)
-  const resultValueRef = useRef(null)
   const resultPopupRef = useRef(null)
+  const popupTimeoutRef = useRef(null)
   
   const [isSpinning, setIsSpinning] = useState(false)
   const [result, setResult] = useState('')
@@ -113,6 +118,10 @@ export default function Wheel() {
       document.removeEventListener("keydown", preventScrollKeys)
       if (tickIntervalRef.current) {
         clearTimeout(tickIntervalRef.current)
+      }
+      if (popupTimeoutRef.current) {
+        clearTimeout(popupTimeoutRef.current)
+        popupTimeoutRef.current = null
       }
     }
   }, [])
@@ -278,6 +287,9 @@ export default function Wheel() {
 
   const slugifyMood = (mood) => {
     if (!mood) return ''
+    // Use explicit map first to avoid any unexpected transliteration issues
+    if (MOOD_SLUG_MAP[mood]) return MOOD_SLUG_MAP[mood]
+    
     return mood
       .replace(/İ/g, 'i')
       .replace(/I/g, 'i')
@@ -304,10 +316,14 @@ export default function Wheel() {
     setResultImageSrc(getMoodImageSrc(text))
     setResultImageError(false)
     setShowResult(true)
-    
-    setTimeout(() => {
+
+    if (popupTimeoutRef.current) {
+      clearTimeout(popupTimeoutRef.current)
+    }
+    popupTimeoutRef.current = setTimeout(() => {
       setShowResult(false)
-    }, 2000)
+      popupTimeoutRef.current = null
+    }, 3000)
   }
 
   const startSpin = (direction = 1) => {
@@ -322,7 +338,8 @@ export default function Wheel() {
     const targetIndex = randInt(0, MOODS.length - 1)
     const targetRotation = computeTargetRotation(targetIndex, direction)
     const snappedRotation = normalizeDeg(targetRotation)
-    const duration = 3200 + randInt(0, 650)
+    // Spin hızını biraz yavaşlatmak için süreyi uzat
+    const duration = 4000 + randInt(400, 900)
 
     startTickSounds(duration / 1000)
 
@@ -407,9 +424,9 @@ export default function Wheel() {
     if (angleDiff > 180) angleDiff -= 360
     if (angleDiff < -180) angleDiff += 360
     
-    // Determine direction: positive = clockwise, negative = counterclockwise
-    // For touch, we want the wheel to rotate in the direction of the drag
-    const direction = angleDiff > 0 ? 1 : -1
+    // Determine direction: positive = clockwise, negative = counterclockwise.
+    // angleDiff > 0 means drag moved clockwise (screen coords); spin with drag.
+    const direction = angleDiff > 0 ? -1 : 1
     
     // Only trigger if there was significant movement (at least 10 degrees)
     if (Math.abs(angleDiff) > 10) {
@@ -421,6 +438,18 @@ export default function Wheel() {
 
   return (
     <div className="app">
+      <div className="brand">
+        <Image
+          src="/brew-logo.png"
+          alt="Brew Mood Coffee Tea"
+          width={80}
+          height={80}
+          className="brand__logo"
+          priority
+        />
+        <h1 className="brand__title">Adına Göre Değil Moduna Göre Kahve!</h1>
+      </div>
+
       <div
         ref={wheelShellRef}
         className="wheel-shell"
@@ -453,7 +482,7 @@ export default function Wheel() {
 
       <div
         ref={resultPopupRef}
-        className={`result-popup ${showResult ? 'is-visible' : ''}`}
+        className={`result-popup ${showResult ? 'is-visible' : 'is-hiding'}`}
         aria-live="polite"
       >
         <div className="result-popup__content">
@@ -468,9 +497,6 @@ export default function Wheel() {
               onError={() => setResultImageError(true)}
             />
           )}
-          <div ref={resultValueRef} className="result-popup__value">
-            {result}
-          </div>
         </div>
       </div>
     </div>
