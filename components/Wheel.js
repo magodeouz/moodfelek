@@ -279,6 +279,8 @@ export default function Wheel() {
   const slugifyMood = (mood) => {
     if (!mood) return ''
     return mood
+      .replace(/İ/g, 'i')
+      .replace(/I/g, 'i')
       .toLowerCase()
       .replace(/ı/g, 'i')
       .replace(/ğ/g, 'g')

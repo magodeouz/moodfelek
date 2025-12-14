@@ -324,6 +324,7 @@ body {
     inset 0 0 30px rgba(255, 111, 145, 0.1);
   backdrop-filter: blur(15px);
   animation: popupGlow 2s ease-in-out infinite;
+  text-align: center;
 }
 
 .wheel-shell.is-spinning .pointer {
